@@ -35,4 +35,15 @@ const userSchema = new Schema(
   { timestamps: true }
 );
 
+//---quitar y no exponer contraseña del usuario
+// UsuarioSchema.methods.toJSON = function() {
+//   const { __v, password, _id, ...usuario  } = this.toObject();
+//   usuario.uid = _id;
+//   return usuario;
+// }
+userSchema.methods.toJSON = function() {
+  const {password, ...rest  } = this.toObject();
+  return rest;
+}
+
 module.exports = mongoose.model("User", userSchema);

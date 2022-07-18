@@ -1,9 +1,9 @@
 const User = require("../models/user");
 const jwt = require("jsonwebtoken");
 const { hashPassword, comparePassword } = require("../helpers/auth");
-const nanoid = require("nanoid");
-import emaliValidator from "email-validator";
-// sendgrid
+const nanoid = require("nanoid");  //Un generador de ID de cadena unico, pequeno, seguro y compatible con URL para JavaScript.
+import emaliValidator from "email-validator"; //check valid email
+// sendgrid (Verificar la identidad del remitente)
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_KEY);
 
@@ -14,23 +14,23 @@ exports.signup = async (req, res) => {
     const { name, email, password } = req.body;
     if (!name) {
       return res.json({
-        error: "Name is required",
+        error: "Nambre es requerido",
       });
     }
     if (!email) {
       return res.json({
-        error: "Email is required",
+        error: "Email es requerido",
       });
     }
     if (!password || password.length < 6) {
       return res.json({
-        error: "Password is required and should be 6 characters long",
+        error: "Password es requirido y debe ser minimo de 6 caracteres",
       });
     }
     const exist = await User.findOne({ email });
     if (exist) {
       return res.json({
-        error: "Email is taken",
+        error: "Email ya fue registrado", //Email is taken
       });
     }
     // hash password
@@ -71,14 +71,14 @@ exports.signin = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) {
       return res.json({
-        error: "No user found",
+        error: "usuario no registrado" //"No user found",
       });
     }
     // check password
     const match = await comparePassword(password, user.password);
     if (!match) {
       return res.json({
-        error: "Wrong password",
+        error:"password incorrecto"  // "Wrong password",
       });
     }
     // create signed token
@@ -86,8 +86,8 @@ exports.signin = async (req, res) => {
       expiresIn: "7d",
     });
 
-    user.password = undefined;
-    user.secret = undefined;
+    user.password = undefined;  //evitar exponer pass
+    user.secret = undefined;    //evitar exponer secret
     res.json({
       token,
       user,
@@ -115,8 +115,8 @@ exports.forgotPassword = async (req, res) => {
   const emailData = {
     from: process.env.EMAIL_FROM,
     to: user.email,
-    subject: "Password reset code",
-    html: `<h1>Your password  reset code is: ${resetCode}</h1>`,
+    subject: "codigo de restablecimiento de contraseña",
+    html: `<h1>Tu codigo de restableimiento de de contraseña es: ${resetCode}</h1>`,
   };
   // send email
   try {
@@ -136,12 +136,12 @@ exports.resetPassword = async (req, res) => {
     const user = await User.findOne({ email, resetCode });
     // if user not found
     if (!user) {
-      return res.json({ error: "Email or reset code is invalid" });
+      return res.json({ error: "Email o codigo de cambio de contraseña es invalido" });
     }
     // if password is short
     if (!password || password.length < 6) {
       return res.json({
-        error: "Password is required and should be 6 characters long",
+        error: "Password es requerido y debe ser como mínimo de 6 caracteres de longitud",
       });
     }
     // hash password
@@ -169,17 +169,17 @@ export const createUser = async (req, res) => {
     const { name, email, password, role, checked, website } = req.body;
     if (!name) {
       return res.json({
-        error: "Name is required",
+        error: "Nombre es requerido", //"Name is required"
       });
     }
     if (!email) {
       return res.json({
-        error: "Email is required",
+        error:"Email es requerido", //"Email is required",
       });
     }
     if (!password || password.length < 6) {
       return res.json({
-        error: "Password is required and should be 6 characters long",
+        error:"Password requerido y debe ser como mínimo de 6 caracteres de longitud" //"Password is required and should be 6 characters long",
       });
     }
     // if user exist
@@ -197,13 +197,21 @@ export const createUser = async (req, res) => {
         to: email,
         from: process.env.EMAIL_FROM,
         subject: "Account created",
+        // html: `
+        // <h1>Hi ${name}</h1>
+        // <p>Your CMS account has been created successfully.</p>
+        // <h3>Your login details</h3>
+        // <p style="color:red;">Email: ${email}</p>
+        // <p style="color:red;">Password: ${password}</p>
+        // <small>We recommend you to change your password after login.</small>
+        // `,
         html: `
-        <h1>Hi ${name}</h1>
-        <p>Your CMS account has been created successfully.</p>
-        <h3>Your login details</h3>
+        <h1>Hola ${name}</h1>
+        <p>Su cuenta de CMS se ha creado correctamente..</p>
+        <h3>Sus datos de inicio de sesión</h3>
         <p style="color:red;">Email: ${email}</p>
         <p style="color:red;">Password: ${password}</p>
-        <small>We recommend you to change your password after login.</small>
+        <small>Le recomendamos que cambie su contraseña después de iniciar sesión.</small>
         `,
       };
 
@@ -271,17 +279,17 @@ export const updateUserByAdmin = async (req, res) => {
 
     // check valid email
     if (!emaliValidator.validate(email)) {
-      return res.json({ error: "Invalid email" });
+      return res.json({ error: "Email invalido" });        //"Invalid email"
     }
     // check if email is taken
     const exist = await User.findOne({ email });
     if (exist && exist._id.toString() !== userFromDb._id.toString()) {
-      return res.json({ error: "Email is taken" });
+      return res.json({ error: "Email es usado" });   //"Email is taken"
     }
     // check password length
     if (password && password.length < 6) {
       return res.json({
-        error: "Password is required and should be 6 characters long",
+        error: "Password requerido y debe ser como mínimo de 6 caracteres de longitud",   //Password is required and should be 6 characters long
       });
     }
 
@@ -311,24 +319,24 @@ export const updateUserByUser = async (req, res) => {
 
     const userFromDb = await User.findById(id);
 
-    // check if user is himself/herself
+    // check if user is himself/herself     //comprobar si el usuario es él mismo
     if (userFromDb._id.toString() !== req.user._id.toString()) {
-      return res.status(403).send("You are not allowed to update this user");
+      return res.status(403).send("No tienes permiso para actualizar este usuario"); //You are not allowed to update this user
     }
 
     // check valid email
     if (!emaliValidator.validate(email)) {
-      return res.json({ error: "Invalid email" });
+      return res.json({ error: "Email invalido" });  //"Invalid email"
     }
     // check if email is taken
     const exist = await User.findOne({ email });
     if (exist && exist._id.toString() !== userFromDb._id.toString()) {
-      return res.json({ error: "Email is taken" });
+      return res.json({ error: "Email es usado" });  //Email is taken
     }
     // check password length
     if (password && password.length < 6) {
       return res.json({
-        error: "Password is required and should be 6 characters long",
+        error: "Password requerido y debe ser como mínimo de 6 caracteres de longitud",  //"Password is required and should be 6 characters long"
       });
     }
 

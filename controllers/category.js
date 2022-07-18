@@ -56,7 +56,7 @@ export const postsByCategory = async (req, res) => {
     const category = await Category.findOne({ slug });
 
     const posts = await Post.find({ categories: category._id })
-      .populate("featuredImage postedBy")
+      .populate("featuredImage postedBy")  //poblar campo 'featuredImage','postedBy'
       .limit(20);
 
     res.json({ posts, category });
